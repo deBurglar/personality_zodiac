@@ -175,3 +175,80 @@ ggplot(regression_results, aes(x = Trait, y = R2)) +
        x = "Personality Traits", y = "Variance Explained (%)") +
   theme_minimal()
 
+
+
+#extra
+install.packages("caret")
+
+library(caret)
+
+# Convert zodiac to factor if not already
+mypersonality_clean$zodiac <- as.factor(mypersonality_clean$zodiac)
+
+# Train a model to predict Extraversion (sEXT) using zodiac
+model_data <- mypersonality_clean[, c("zodiac", "sEXT")]
+
+# Train/Test Split
+set.seed(123)
+train_index <- createDataPartition(model_data$sEXT, p = 0.8, list = FALSE)
+train_data <- model_data[train_index, ]
+test_data <- model_data[-train_index, ]
+
+# Fit linear regression
+lm_model <- train(sEXT ~ zodiac, data = train_data, method = "lm")
+
+# Evaluate
+pred <- predict(lm_model, newdata = test_data)
+RMSE
+
+
+
+# K-means clustering
+install.packages("factoextra")
+library(factoextra)
+
+
+traits_only <- mypersonality_clean %>%
+  select(sEXT, sNEU, sAGR, sCON, sOPN)
+
+kmeans_result <- kmeans(scale(traits_only), centers = 4)
+
+mypersonality_clean$cluster <- as.factor(kmeans_result$cluster)
+
+# Compare clusters with zodiac
+table(mypersonality_clean$cluster, mypersonality_clean$zodiac)
+
+# Visualize clusters
+library(cluster)
+fviz_cluster(kmeans_result, data = traits_only)
+
+chisq.test(table(mypersonality_clean$cluster, mypersonality_clean$zodiac))
+
+install.packages("rcompanion")  # Install it
+library(rcompanion)             # Load it
+
+cramerV(table(mypersonality_clean$cluster, mypersonality_clean$zodiac))
+
+
+library(ggplot2)
+
+ggplot(mypersonality_clean, aes(x = zodiac, fill = as.factor(cluster))) +
+  geom_bar(position = "fill") +
+  scale_y_continuous(labels = scales::percent) +
+  labs(
+    title = "Distribution of Clusters Across Zodiac Signs",
+    x = "Zodiac Sign",
+    y = "Proportion",
+    fill = "Cluster"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+library(dplyr)
+
+cluster_profiles <- mypersonality_clean %>%
+  group_by(cluster) %>%
+  summarise(across(starts_with("s"), mean, na.rm = TRUE))
+
+print(cluster_profiles)
+
